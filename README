@@ -1,0 +1,36 @@
+An extension to bring pyes to Flask with MongoEngine. Currently it only supports indexing
+via MongoDB River plugin.
+
+Here is an example to make a index for a MongoEngine document:
+
+class A(db.Document):
+  attr1 = db.IntField()
+  attr2 = db.StringField()
+
+  meta = {
+    'elastic_search': {
+      # can use 'name' to specify it's own index name
+      # Document type is set to collection name of MongoEngine
+      'river': {}, # River settings, look MongoDb River plugin docs
+                   # without this key, the river will not be enabled
+      'mappings': { # Mapping data, see PyES docs.
+        'properties': {
+          'attr1': {
+            'type': 'int',
+            'index': 'not_analyzed'
+          },
+        }
+      }
+    }
+  }
+
+And to create the river:
+# Construct PyESMongoEngine and store it in pyes
+
+# Creates all indexes (removes them if existant) and sets up the rivers.
+pyes.recreate_indexes()
+
+# Do search
+pyes.search(A, pyes.TermQuery('attr2', 'value1'))
+# Similar as pyes.search(pyes.TermQuery('attr2', 'value1'), doc_types = ['a'], indices = ['a'])
+# Returns as MongoEngine document objects
