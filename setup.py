@@ -9,8 +9,8 @@ from setuptools import setup
 
 setup(
   name = 'Flask-PyESMongoEngine',
-  version = '1.0',
-  #url = 'http://example.com/flask-sqlite3/', TODO
+  version = '0.1-dev',
+  url = 'https://github.com/MasterMind2k/flask-pyesmongoengine',
   license = 'BSD',
   author = 'Gregor Kalisnik',
   author_email = 'gregor@kalisnik.si',
