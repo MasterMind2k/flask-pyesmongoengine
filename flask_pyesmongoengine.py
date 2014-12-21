@@ -35,6 +35,12 @@ def prepare_index(model):
       'settings': index_settings['river'],
       'collection': model._get_collection_name()
     }
+    if model._meta.get('allow_inheritance'):
+      # Make sure we have _cls in index
+      if '_cls' in index_settings['river'].get('exclude_fields', []):
+        index_settings['river']['exclude_fields'].remove('_cls')
+      elif index_settings['river'].get('include_fields') and '_cls' not in index_settings['river']['include_fields']:
+        index_settings['river']['include_fields'].append('_cls')
 
   mappings = index_settings.get('mappings')
   if mappings and not isinstance(mappings, dict):
@@ -52,6 +58,13 @@ def prepare_index(model):
           fields.append(new_field)
     # Fetch custom analyzers from settings
     index_settings['analyzer'] = dict([(i, app.config['ES_ANALYZERS'][i]) for i in analyzers if i in app.config['ES_ANALYZERS']])
+
+  if model._meta.get('allow_inheritance'):
+    # Set (override) mapping for _cls
+    index_settings.setdefault('mappings', {}).setdefault('properties', {})['_cls'] = {
+      'type': 'string',
+      'index': 'not_analyzed',
+    }
 
   return index_name, index_type, index_settings
 
@@ -246,9 +259,17 @@ class PyESMongoEngine(object):
     for index in self._indexes.keys():
       self.recreate_index(index)
 
-  def search(self, indices, *args, **kwargs):
+  def search(self, indices, query, *args, **kwargs):
     """Searches in specified model's index.
     """
     index_name = get_index_name(indices)
     type = get_type(indices)
-    return ResultProxy(indices, self.conn.search(*args, doc_types = [type], indices = [index_name], **kwargs))
+
+    from mongoengine import Document
+
+    if issubclass(indices, Document) and indices._meta.get('allow_inheritance'):
+      # We have models with inheritance, need to use _cls! Wrapping around a BoolQuery.
+      query = pyes.BoolQuery(must = [query])
+      query.add_must(pyes.PrefixQuery('_cls', indices._class_name))
+
+    return ResultProxy(indices, self.conn.search(query, *args, doc_types = [type], indices = [index_name], **kwargs))
