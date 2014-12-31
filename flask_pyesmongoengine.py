@@ -52,6 +52,9 @@ def prepare_index(model):
     analyzers = []
     fields = mappings.values()
     for field in fields:
+      if not isinstance(field, dict):
+        continue
+
       analyzers += [v for k, v in field.items() if k.startswith('analyzer')]
       for new_field in field.get('properties', {}).values():
         if isinstance(new_field, dict):
