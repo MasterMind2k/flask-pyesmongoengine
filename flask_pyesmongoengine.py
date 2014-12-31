@@ -129,6 +129,7 @@ class PyESMongoEngine(object):
   def init_app(self, app):
     kwargs = dict([(k.lower(), v) for k, v in app.config.setdefault('ELASTICSEARCH_SETTINGS', {}).items()])
     self._index_settings = kwargs.pop('indices', {})
+    self._index_prefix = kwargs.pop('prefix', '')
     self.conn = self.ES(**kwargs)
 
     self._mongodb_hosts = []
@@ -173,7 +174,7 @@ class PyESMongoEngine(object):
       self._mongodb_hosts,
       self._mongodb_db,
       river_properties['collection'],
-      index,
+      self._index_prefix + index,
       type,
       options = river_properties['settings'].get('options'),
       script = river_properties['settings'].get('script')
@@ -210,7 +211,7 @@ class PyESMongoEngine(object):
     # We now remove the index itself
     try:
       # Remove index
-      self.conn.indices.delete_index(index)
+      self.conn.indices.delete_index(self._index_prefix + index)
     except (pyes.exceptions.TypeMissingException,\
             pyes.exceptions.IndexMissingException):
       pass
@@ -240,7 +241,7 @@ class PyESMongoEngine(object):
     if mappings:
       settings['mappings'] = mappings
     # Create index
-    self.conn.indices.create_index(index, settings)
+    self.conn.indices.create_index(self._index_prefix + index, settings)
 
     # Create Rivers
     for t in self._indexes[index].keys():
@@ -272,4 +273,4 @@ class PyESMongoEngine(object):
       query = pyes.BoolQuery(must = [query])
       query.add_must(pyes.PrefixQuery('_cls', indices._class_name))
 
-    return ResultProxy(indices, self.conn.search(query, *args, doc_types = [type], indices = [index_name], **kwargs))
+    return ResultProxy(indices, self.conn.search(query, *args, doc_types = [type], indices = [self._index_prefix + index_name], **kwargs))
