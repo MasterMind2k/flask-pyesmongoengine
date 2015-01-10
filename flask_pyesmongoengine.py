@@ -47,21 +47,6 @@ def prepare_index(model):
     raise TypeError("Specified es_mappings in '{}' is not a dict, it is '{}'".format(model.__name__,
                                                                                       type(fields).__name__))
 
-  if mappings:
-    # Get used analyzers
-    analyzers = []
-    fields = mappings.values()
-    for field in fields:
-      if not isinstance(field, dict):
-        continue
-
-      analyzers += [v for k, v in field.items() if k.startswith('analyzer')]
-      for new_field in field.get('properties', {}).values():
-        if isinstance(new_field, dict):
-          fields.append(new_field)
-    # Fetch custom analyzers from settings
-    index_settings['analyzer'] = dict([(i, app.config['ES_ANALYZERS'][i]) for i in analyzers if i in app.config['ES_ANALYZERS']])
-
   if model._meta.get('allow_inheritance'):
     # Set (override) mapping for _cls
     index_settings.setdefault('mappings', {}).setdefault('properties', {})['_cls'] = {
@@ -134,6 +119,12 @@ class PyESMongoEngine(object):
     self._index_settings = kwargs.pop('indices', {})
     self._index_prefix = kwargs.pop('prefix', '')
     self.conn = self.ES(**kwargs)
+
+    # Put analyzers into settings
+    if app.config.get('ES_ANALYZERS'):
+      self._index_settings.setdefault('default', {}).setdefault('settings', {})['analysis'] = {
+        'analyzer': app.config['ES_ANALYZERS']
+      }
 
     self._mongodb_hosts = []
     for host in (i for i in app.config['MONGODB_SETTINGS']['HOST'].replace('mongodb://', '').split(',')):
@@ -227,12 +218,6 @@ class PyESMongoEngine(object):
     # Get index settings
     settings = dict(self._index_settings.get('default', {}))
     settings.update(self._index_settings.get('collection', {}))
-    # And put in the analyzers
-    analyzers = {}
-    for t in self._indexes[index].values():
-      analyzers.update(t.get('analyzer', {}))
-    if analyzers:
-      settings['analyzer'] = analyzers
 
     # Put in all the mappings and flow in the rivers
     mappings = {}
