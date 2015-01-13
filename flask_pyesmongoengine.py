@@ -121,10 +121,12 @@ class PyESMongoEngine(object):
     self.conn = self.ES(**kwargs)
 
     # Put analyzers into settings
-    if app.config.get('ES_ANALYZERS'):
-      self._index_settings.setdefault('default', {}).setdefault('settings', {})['analysis'] = {
-        'analyzer': app.config['ES_ANALYZERS']
-      }
+    if app.config.get('ES_ANALYSIS'):
+      self._index_settings.setdefault(
+        'default', {}
+      ).setdefault(
+        'settings', {}
+      )['analysis'] = app.config['ES_ANALYSIS']
 
     self._mongodb_hosts = []
     for host in (i for i in app.config['MONGODB_SETTINGS']['HOST'].replace('mongodb://', '').split(',')):
