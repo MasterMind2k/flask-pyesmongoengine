@@ -174,7 +174,7 @@ class PyESMongoEngine(object):
       type,
       options = river_properties['settings'].get('options'),
       script = river_properties['settings'].get('script')
-    ), type
+    ), self._index_prefix + type
     return river
 
   def delete_river(self, model):
