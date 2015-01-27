@@ -245,6 +245,16 @@ class PyESMongoEngine(object):
     # And create it
     self.create_index(model)
 
+  def create_indexes(self):
+    # Go through all indexes
+    for index in self._indexes.keys():
+      self.create_index(index)
+
+  def delete_indexes(self):
+    # Go through all indexes
+    for index in self._indexes.keys():
+      self.delete_index(index)
+
   def recreate_indexes(self):
     # Go through all indexes
     for index in self._indexes.keys():
