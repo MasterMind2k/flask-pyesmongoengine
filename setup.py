@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
   name = 'Flask-PyESMongoEngine',
-  version = '0.1-dev',
+  version = '0.1.0',
   url = 'https://github.com/MasterMind2k/flask-pyesmongoengine',
   license = 'BSD',
   author = 'Gregor Kalisnik',
